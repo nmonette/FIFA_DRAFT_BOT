@@ -1,4 +1,24 @@
-The bot uses 4 major commands: 
+The bot uses 3 commands: 
 1. !register
 2. !clear
-3. !start x
+3. !start
+
+Before beginning the draft, each participant must register for the draft by using the !register commmand in chat. 
+This adds your USER ID to the list of participants (playerlist.json). 
+
+To clear the list of participants, use  command !clear. 
+
+To start the draft, command !start will assume the user intends to do an 11-man draft. If the user wishes to 
+modify the number of players drafted, they can use the optional parameter to start a draft for x amount of 
+players (for example, !start 10 would begin 10-man draft). 
+
+Participants will be notified of the draft order (selected at random), and the bot will begin prompting
+users when it is their turn to pick. 
+
+Messages should be sent into the chat, saying the first and last name of the player (accents should not be used, 
+and capitalization does not matter). If a player has been picked before, the bot will detect it, and ask the user 
+to pick again. 
+
+Upon completion, each participant's roster will be sent to them in a direct message. 
+
+Happy Drafting!
