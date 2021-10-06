@@ -11,10 +11,10 @@ async def on_ready():
 
 @client.command()
 async def register(ctx):
-    with open('PATH REMOVED', 'r') as f:
+    with open('PATH TO playerlist.json', 'r') as f:
         playerdict = json.load(f)
     playerdict[ctx.author.id] = ctx.author.mention
-    with open('PATH REMOVED', 'w') as f:
+    with open('PATH TO playerlist.json', 'w') as f:
         json.dump(playerdict, f)
     await ctx.send(f'{ctx.author.mention} has been registered')
 
@@ -35,10 +35,10 @@ class Draft(commands.Cog):
 
     @commands.command()
     async def clear(self, ctx):
-        with open('PATH REMOVED', 'r') as f:
+        with open('PATH TO playerlist.json', 'r') as f:
             playerdict = json.load(f)
         playerdict = dict()
-        with open('PATH REMOVED', 'w') as f:
+        with open('PATH TO playerlist.json', 'w') as f:
             json.dump(playerdict, f)
         await ctx.send('All players have been deregistered')
 
@@ -53,7 +53,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     async def start(self, ctx, rostersize=11):
-        with open('PATH REMOVED', 'r') as f:
+        with open('PATH TO playerlist.json', 'r') as f:
             playerdict = json.load(f)
         for key in playerdict:
             self.playerlist += [playerdict[key]]
@@ -104,7 +104,7 @@ class Draft(commands.Cog):
                 if self.pickcount == len(self.pickorder):
                     await channel.send("Congratulations! The draft has concluded")
                     self.__init__(self.playerlist)
-                    with open('PATH REMOVED', 'r') as f:
+                    with open('PATH TO playerlist.json', 'r') as f:
                         playerroster = json.load(f)
                     for key in playerroster:
                         user = await client.fetch_user(int(key))
@@ -124,4 +124,4 @@ class Draft(commands.Cog):
 client.add_cog(Draft(client))
 
 
-client.run("BOT TOKEN REMOVED")
+client.run("BOT TOKEN OMITTED")
