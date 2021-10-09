@@ -18,7 +18,14 @@ async def register(ctx):
         json.dump(playerdict, f)
     await ctx.send(f'{ctx.author.mention} has been registered')
 
-
+@client.command()
+async def deregister(ctx):
+    with open(''PATH TO playerlist.json'', 'r') as f:
+        playerdict = json.load(f)
+    playerdict.pop(f'{ctx.author.id}')
+    with open(''PATH TO playerlist.json', 'w') as f:
+        json.dump(playerdict, f)
+    await ctx.send(f'{ctx.author.mention} has been deregistered')    
 
 class Draft(commands.Cog):
     def __init__(self, playerlist):
