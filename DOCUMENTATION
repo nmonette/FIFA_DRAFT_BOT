@@ -15,9 +15,10 @@ players (for example, !start 10 would begin 10-man draft).
 Participants will be notified of the draft order (selected at random), and the bot will begin prompting
 users when it is their turn to pick. 
 
-Messages should be sent into the chat, saying the first and last name of the player (accents should not be used, 
-and capitalization does not matter). If a player has been picked before, the bot will detect it, and ask the user 
-to pick again. 
+Messages should be sent into the chat, saying the first and/or last name of the player (accents should not be used, 
+and capitalization does not matter). The bot will then ask to confirm which player the user is making reference to, 
+and will take input of a number corresponding to one fo the potential players. If a player has been picked before, 
+the bot will detect it, and ask the user to pick again. 
 
 Upon completion, each participant's roster will be sent to them in a direct message. 
 
