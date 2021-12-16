@@ -1,2 +1,5 @@
 10/8/2021
 - !deregister command added. Creates functionality for a user to remove themselves from the draft list. 
+
+12/15/2021
+- Upon entering a potential pick, the bot now searches through the database of FIFA 22 players to verify which player the user is referring to. This allows for greater specificity, as well as better prevention of duplicate players across multiple users. 
