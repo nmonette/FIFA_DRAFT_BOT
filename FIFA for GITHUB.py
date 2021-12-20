@@ -67,7 +67,7 @@ class Draft(commands.Cog):
             json.dump(playerdict, f)
         await ctx.send('All players have been deregistered')
 
-    def checkrosters(self, string):
+    def _checkrosters(self, string):
         """Checks to see if a player has been taken already or not"""
         for name in self.playerlist:
             with open(f'{name}_roster', 'r') as f:
@@ -141,7 +141,7 @@ class Draft(commands.Cog):
                     except:
                         await channel.send("Please submit one of the given numbers.")
                 try:
-                    if self.checkrosters(player) == False:
+                    if self._checkrosters(player) == False:
                         with open(f'{message.author.mention}_roster', 'r') as f:
                             newchange = json.load(f)
                             self.checked = False
