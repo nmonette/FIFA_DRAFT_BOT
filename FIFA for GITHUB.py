@@ -1,179 +1,126 @@
-import discord
+import discord, random, json
 from discord.ext import commands
-import random
-import json
-import csv
+from difflib import SequenceMatcher
 
-client = commands.Bot(command_prefix = '!',intents=discord.Intents.all())
+client = commands.Bot(command_prefix = '!', intents = discord.Intents.all())
 
 @client.event
 async def on_ready():
-    """Let the user know the bot is ready."""
-    print('Bot is ready.')
-
+    print("Ready for action. GLHF!")
+    
 @client.command()
 async def register(ctx):
-    """Add users wanting to partcipate in the draft to a JSON file of player ID's."""
-    with open('playerlist.json', 'r') as f:
-        playerdict = json.load(f)
-    playerdict[ctx.author.id] = ctx.author.mention
-    with open('playerlist.json', 'w') as f:
-        json.dump(playerdict, f)
+    with open("rosters.json", 'r+') as f:
+        playerlist = json.load(f)
+        playerlist[ctx.author.mention] = []
+    with open("rosters.json", 'w') as f:
+        json.dump(playerlist, f)
     await ctx.send(f'{ctx.author.mention} has been registered')
 
 @client.command()
 async def deregister(ctx):
-    """Removes users from the aforementioned registration file."""
-    with open('playerlist.json', 'r') as f:
-        playerdict = json.load(f)
-    playerdict.pop(f'{ctx.author.id}')
-    with open('playerlist.json', 'w') as f:
-        json.dump(playerdict, f)
+    with open("rosters.json", 'r') as f:
+        playerlist = json.load(f)
+        playerlist.pop(ctx.author.mention)
+    with open("rosters.json", 'w') as f:
+        json.dump(playerlist, f)
     await ctx.send(f'{ctx.author.mention} has been deregistered')
 
-def potential_pick(entry):
-        """Return a list of potential players to be picked based off of the 
-        user's entry."""
-        potentials = list()
-        with open("22_playernames_short_new.txt") as short:
-            short = short.readlines()
-            with open("22_playernames_long.txt") as long:
-                long = long.readlines()
-                for i in range(len(short)):
-                    if short[i] in entry or entry in short[i]:
-                        potentials.append(long[i])
-            return potentials
+@client.command()
+async def clear(ctx):
+    with open("rosters.json", 'w') as f:
+        json.dump(dict(), f)
+    await ctx.send("All players have been deregistered")
 
+                    
+    
 class Draft(commands.Cog):
-    def __init__(self, playerlist):
-        self.playertaken = False
-        self.draftstart = False
-        self.currentpick = ''
-        self.playerlist = []
-        self.pickorder = []
-        self.rostersize = 0
-        self.pickcount = 0
-        self.checked = False
+    def __init__(self):
+        self.current = None
+        self.full = None
         self.waiting = False
         self.potentials = []
-
-    @commands.command()
-    async def clear(self, ctx):
-        """Remove all players from the registration file."""
-        with open('playerlist.json', 'r') as f:
-            playerdict = json.load(f)
-        playerdict = dict()
-        with open('playerlist.json', 'w') as f:
-            json.dump(playerdict, f)
-        await ctx.send('All players have been deregistered')
-
-    def _checkrosters(self, string):
-        """Checks to see if a player has been taken already or not"""
-        for name in self.playerlist:
-            with open(f'{name}_roster', 'r') as f:
-                checker = json.load(f)
-            for key in checker:
-                if string.lower() in checker[key].lower() or checker[key].lower() in string.lower():
+    
+    @staticmethod
+    def _checkrosters(s):
+        with open("rosters.json", 'r') as f:
+            rosters = json.load(f).values()
+            for i in rosters:
+                if s in i:
                     return True
-            return False
+        return False
+    
+    @staticmethod
+    def potential_pick(entry):
+        final = list()
+        with open("22_playernames_long.txt", 'r') as f:
+            f = [i.strip() for i in f.readlines()]
+            sims = []
+            for line,name in enumerate(open("22_playernames_short_new.txt", 'r')):
+                name = name.strip()
+                sims.append((name, line, SequenceMatcher(a=entry, b=name).find_longest_match().size))
+            x = sorted(sims, key = lambda s: -s[2])[:5]
+        for i in x:
+            final.append(f[i[1]])
+        return final
 
-
+    def create_order(self):
+        with open("rosters.json", 'r') as f:
+            self.order = list(json.load(f).keys())
+        random.shuffle(self.order)
+    
+    def create_full_order(self, rostersize):
+        for i in [(self.order if i % 2 == 0 else self.order[::-1]) for i in range(rostersize)]:
+            for j in i:
+                yield j
+                    
     @commands.command()
-    async def start(self, ctx, rostersize=11):
-        """Begin the draft"""
-        with open('playerlist.json', 'r') as f:
-            playerdict = json.load(f)
-        for key in playerdict:
-            self.playerlist += [playerdict[key]]
-        self.rostersize = int(rostersize)
-        random.shuffle(self.playerlist)
-        for name in self.playerlist:
-            await ctx.send(name)
-        await ctx.send('is your pick order')
-        status = []
-        for num in range(self.rostersize):
-            if num % 2 == 0:
-                status.append("Forward")
-            else:
-                status.append("Backward")
-        for direction in status:
-            reverse = self.playerlist[::-1]
-            if direction == "Forward":
-                for name in [self.playerlist]:
-                    self.pickorder += name
-            else:
-                for name in [reverse]:
-                    self.pickorder += name
-        for name in self.playerlist:
-            emptydict = dict()
-            with open(f'{name}_roster', 'w') as f:
-                json.dump(emptydict, f)
-        self.draftstart = True
-        self.currentpick = self.pickorder[self.pickcount]
-        await ctx.send(f'{self.currentpick} it is your pick')
-
-
-
-
+    async def start(self, ctx, rostersize = 11):
+        self.create_order()
+        await ctx.send(''.join([f'{i}\n' for i in self.order]) + 'is your pick order')
+        self.full = self.create_full_order(rostersize)
+        self.current = next(self.full)
+        await ctx.send(f'{self.current} it is your pick')
+        
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Record the draft picks of each player."""
         channel = message.channel
-        if self.draftstart == True:
-            if message.author.mention == self.currentpick:
-                if self.checked == False and self.waiting == False:
-                    self.potentials = potential_pick(message.content)
-                    if self.potentials is not None:
-                        count = 1
-                        sender = ""
-                        for i in self.potentials:
-                            sender += f"{count}: {i}"
-                            count += 1
-                        await channel.send(f"Do you mean:\n{sender}")
-                        self.waiting = True
-                    else:
-                        await channel.send("No player(s) found. Please try again.")
-                elif self.waiting == True:
-                    try:
-                        player = self.potentials[int(message.content) -1]
+        if message.author.mention == self.current:
+            if self.waiting == False:
+                self.potentials = Draft.potential_pick(message.system_content)
+                await channel.send('Did you mean:\n' + ''.join([f'{i}: {self.potentials[i]}\n' for i in range(len(self.potentials))]) + '5: Search Again')
+                self.waiting = True
+            elif self.waiting == True:
+                if message.system_content in '01234':
+                    if not Draft._checkrosters(self.potentials[int(message.system_content)]):
+                        with open("rosters.json", 'r') as f:
+                            rosters = json.load(f)
+                            rosters[message.author.mention].append(self.potentials[int(message.system_content)])
+                        with open("rosters.json", 'w') as f:    
+                            json.dump(rosters, f)
                         self.waiting = False
-                        self.checked = True
-                    except:
-                        await channel.send("Please submit one of the given numbers.")
-                try:
-                    if self._checkrosters(player) == False:
-                        with open(f'{message.author.mention}_roster', 'r') as f:
-                            newchange = json.load(f)
-                            self.checked = False
-                        with open(f'{message.author.mention}_roster', 'w') as f:
-                            newchange[self.pickcount] = player
-                            json.dump(newchange, f)
-                        self.pickcount += 1
+                        try:
+                            await channel.send(f'{next(self.full)} it is your pick')
+                        except StopIteration:
+                            await channel.send("Congratulations! The draft is finished")     
+                            with open('rosters.json', 'r+') as f:
+                                for i,j in json.load(f).items():
+                                    user = await client.fetch_user(int(i[2:-1]))
+                                    await user.send(''.join([f'{i}\n' for i in j]))
+                                json.dump(dict(), f)
+                            
                     else:
-                        await channel.send("Player already taken, please try again")
-                        self.checked = False
-                except:
-                    pass
-                if self.pickcount == len(self.pickorder):
-                    await channel.send("Congratulations! The draft has concluded")
-                    self.__init__(self.playerlist)
-                    with open('playerlist.json', 'r') as f:
-                        playerroster = json.load(f)
-                    for key in playerroster:
-                        user = await client.fetch_user(int(key))
-                        value = playerroster[key]
-                        with open(f'{value}_roster', 'r') as f:
-                            draftlist = json.load(f)
-                        for key in draftlist:
-                            value = draftlist[key]
-                            await user.send(str(value))
+                        await channel.send("Player already taken. Please try again")
+                        self.waiting = False
+                elif message.system_content == '5':
+                    await channel.send("Awaiting new pick")
+                    self.waiting = False
                 else:
-                    self.currentpick = self.pickorder[self.pickcount]
-                    await channel.send(f'{self.currentpick} it is your pick')
+                    await channel.send("Please select a number between 0 and 5")
+                
+                    
+                    
+                    
+client.add_cog(Draft())
 
-
-
-client.add_cog(Draft(client))
-
-client.run("TOKEN REMOVED")
-
+client.run("INSERT BOT TOKEN HERE")
