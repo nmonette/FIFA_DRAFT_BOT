@@ -1,7 +1,7 @@
 The bot uses 3 commands: 
 1. !register
 2. !clear
-3. !start
+3. !start {rostersize}
 
 Before beginning the draft, each participant must register for the draft by using the !register commmand in chat. 
 This adds your USER ID to the list of participants (playerlist.json). 
